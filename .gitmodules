@@ -1,0 +1,3 @@
+[submodule "systemd"]
+	path = systemd
+	url = git@github.com:systemd/systemd.git

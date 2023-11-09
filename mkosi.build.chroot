@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -x
+
+if [ ! -f "$BUILDDIR"/systemd/build.ninja ]; then
+   meson setup "$BUILDDIR"/systemd "$SRCDIR"/systemd
+fi
+
+ninja -C "$BUILDDIR"/systemd
+
+meson install -C "$BUILDDIR"/systemd --quiet --no-rebuild --only-changed
