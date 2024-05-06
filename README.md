@@ -105,7 +105,7 @@ You'll need:
    ```
    git clone https://github.com/poettering/diskomator.git
    cd diskomator
-   git submodule update --init
+   git submodule update --init --recursive
    ```
 
 4. Now edit `mkosi.conf` in the diskomator directory locally on your
