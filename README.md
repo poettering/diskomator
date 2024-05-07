@@ -13,8 +13,7 @@ OS root file system contains:
 
 1. A Fedora Linux OS tree
 
-2. A current version of systemd (v255-rc2),
-including
+2. systemd, including
 [systemd-storagetm](https://www.freedesktop.org/software/systemd/man/latest/systemd-storagetm.html)
 and
 [systemd-networkd](https://www.freedesktop.org/software/systemd/man/latest/systemd-networkd.html).
@@ -32,7 +31,7 @@ all local network devices.
 
 The resulting EFI binary is relatively large (~300M), because it
 embeds all kinds of network drivers and graphics devices, plus their
-firmware. To keep things simply this stays close to upstream Fedora,
+firmware. To keep things simple this stays close to upstream Fedora,
 without any attempts to minimize footprint.
 
 ## Why Even?
@@ -74,30 +73,24 @@ Other usecases:
 
 You'll need:
 
-1. A build tree of a current systemd development version, to get the
-   newest version of `systemd-repart`. Once distributions started to
-   regularly ship v255, this manual step will go away. On a Fedora
-   system you'd do it like this:
+1. At least systemd v254 on or newer on your host system. If you don't have
+   systemd v254 or newer, you can use a mkosi tools tree instead by writing
+   the following to mkosi.local.conf:
 
    ```
-   sudo dnf builddep systemd
-   git clone https://github.com/systemd/systemd.git
-   cd systemd
-   meson build
-   ninja -C build
+   [Host]
+   ToolsTree=default
    ```
 
-   And with that you should have a version of systemd built in the
-   `build` sub-directory. No need to install this, BTW, just keep it
-   around, we can use the build tree directly in step 4.
-
-2. v19 of [`mkosi`](https://github.com/systemd/mkosi) or newer. If
+2. v22 of [`mkosi`](https://github.com/systemd/mkosi) or newer. If
    your distribution doesn't have that yet, you can trivially check it
    out too:
 
    ```
    sudo dnf builddep mkosi
    git clone https://github.com/systemd/mkosi.git
+   # Symlink into $PATH for easy access.
+   sudo ln -s /usr/local/bin/mkosi $PWD/mkosi/bin/mkosi
    ```
 
 3. A checkout of `diskomator`:
@@ -105,30 +98,22 @@ You'll need:
    ```
    git clone https://github.com/poettering/diskomator.git
    cd diskomator
-   git submodule update --init --recursive
    ```
 
-4. Now edit `mkosi.conf` in the diskomator directory locally on your
-   system, and adjust the (by default commented) `ExtraSearchPaths=`
-   line to point to the build tree from step 1.
-
-5. You are now ready to build the image. In the `diskomator` git
+4. You are now ready to build the image. In the `diskomator` git
    checkout run:
 
    ```
-   sudo ../mkosi/bin/mkosi -T -i -f build
+   mkosi -i -f build
    ```
 
-   (The `-T -i -f` you can theoretically drop BTW, I only specify them
-   here since it improves rebuild times in case you hack on this.)
-
-   Adjust the `mkosi` path to match where you placed the checkout tree
-   from step 3.
+   (The `-i` you can theoretically drop BTW, I only specify them here since it
+   improves rebuild times in case you hack on this.)
 
    Once this completes you'll have two things in the `mkosi.output/`
    subdirectory: `diskomator.efi` and `diskomator.raw`. The former is
    the EFI binary that we care about. The latter is a GPT disk image
-   with an ESP with that very EFI binary in it (and no other
+   with an ESP with that same EFI binary in it (and no other
    partitions). The latter you can directly `dd` to an USB stick if
    you like, to boot another system from.
 
@@ -137,7 +122,7 @@ You'll need:
    chosen target device's sector and disk size 🔥🔥🔥:
 
    ```
-   sudo ../mkosi/bin/mkosi burn /dev/disk/by-id/usb-SanDisk_Ultra_Fit_4C530000190505109123-0\:0
+   sudo mkosi burn /dev/disk/by-id/usb-SanDisk_Ultra_Fit_4C530000190505109123-0\:0
    ```
 
    Replace the last argument in that command line by the path to the
@@ -146,9 +131,21 @@ You'll need:
 
 And that's really all.
 
-Once systemd v255 and mkosi v19 entered the various distributions step
-1, 2 and 4 will become unnecessary (and the git submodule thing from
-step 3). Once that happened you only have to do 3 and 5.
+## Hacking
+
+To hack locally on this project with newer versions of systemd, you can write
+the following to mkosi.local.conf:
+
+```
+[Content]
+PackageDirectories=<path-to-systemd-mkosi.output>
+```
+
+When mkosi is invoked in the systemd repository, it will write a set of
+distribution packages to the mkosi.output directory which we can directly
+install into the diskomator image. Simply run mkosi once in the systemd
+repository to produce packages with the latest changes, and then run mkosi in
+the diskomator repository to produce a new image.
 
 ## Future
 
